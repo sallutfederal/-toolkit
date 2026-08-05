@@ -97,6 +97,30 @@ class TelegramRelay:
                 logger.error("Failed to send file to Telegram: %s", e)
                 raise
 
+    def get_file(self, file_id):
+        params = {"file_id": file_id}
+        result = self._request("getFile", params)
+        return result
+
+    def download_file(self, file_path):
+        url = f"https://api.telegram.org/file/bot{self.bot_token}/{file_path}"
+        try:
+            response = self.session.get(url, timeout=60)
+            response.raise_for_status()
+            return response.content
+        except Exception as e:
+            logger.error("Failed to download file: %s", e)
+            return None
+
+    def delete_message(self, chat_id, message_id):
+        params = {"chat_id": chat_id, "message_id": message_id}
+        try:
+            result = self._request("deleteMessage", params)
+            return True
+        except Exception as e:
+            logger.error("Failed to delete message %s: %s", message_id, e)
+            return False
+
     def get_updates(self, offset=None, timeout=30, limit=100):
         params = {"timeout": timeout, "limit": limit}
         if offset is not None:

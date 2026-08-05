@@ -103,6 +103,11 @@ class TelegramBot:
         if from_user.get("is_bot"):
             return
 
+        document = msg.get("document")
+        if document:
+            self._handle_document(document)
+            return
+
         text = msg.get("text", "")
         if not text or not text.startswith("/"):
             return
@@ -120,6 +125,85 @@ class TelegramBot:
                 logger.error("Handler error for %s: %s", cmd, e)
         else:
             self._send(f"Comando desconhecido: {cmd}\nEnvie /help para ver os comandos.")
+
+    def _handle_document(self, document):
+        file_name = document.get("file_name", "")
+        if not file_name.endswith(".txt"):
+            self._send("Apenas arquivos .txt sao aceitos.")
+            return
+
+        file_id = document.get("file_id")
+        if not file_id:
+            self._send("Erro ao obter arquivo.")
+            return
+
+        self._send(f"Processando arquivo {file_name}...")
+        try:
+            file_info = self.relay.get_file(file_id)
+            if not file_info:
+                self._send("Erro ao baixar arquivo.")
+                return
+
+            file_path = file_info.get("file_path")
+            if not file_path:
+                self._send("Erro ao obter caminho do arquivo.")
+                return
+
+            content = self.relay.download_file(file_path)
+            if not content:
+                self._send("Erro ao ler arquivo.")
+                return
+
+            proxies = self._extract_proxies(content.decode("utf-8", errors="ignore"))
+            if not proxies:
+                self._send("Nenhum proxy encontrado no arquivo.")
+                return
+
+            from modules.proxy_manager import get_proxy_manager
+            manager = get_proxy_manager()
+
+            added = 0
+            for proxy in proxies:
+                result, msg = manager.add(proxy)
+                if result:
+                    added += 1
+
+            self._send(
+                f"═══════════════════════════════════════════\n"
+                f"  PROXIES IMPORTADOS\n"
+                f"═══════════════════════════════════════════\n\n"
+                f"  Arquivo: {file_name}\n"
+                f"  Encontrados: {len(proxies)}\n"
+                f"  Adicionados: {added}\n"
+                f"═══════════════════════════════════════════"
+            )
+        except Exception as e:
+            self._send(f"Erro ao processar arquivo: {e}")
+
+    def _extract_proxies(self, content):
+        import re
+        proxies = []
+        proxy_pattern = re.compile(
+            r"(?:(?:http|https|socks4|socks5)://)?"
+            r"(\d{1,3}\.\d{1,3}\.\d{1,3}\.\d{1,3})"
+            r"[:\s]+"
+            r"(\d{2,5})"
+        )
+
+        for line in content.splitlines():
+            line = line.strip()
+            if not line or line.startswith("#") or line.startswith("//"):
+                continue
+
+            match = proxy_pattern.search(line)
+            if match:
+                ip = match.group(1)
+                port = match.group(2)
+                proxy = f"http://{ip}:{port}"
+                if proxy not in proxies:
+                    proxies.append(proxy)
+
+        return proxies
 
     def _send(self, text):
         try:
