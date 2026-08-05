@@ -1,0 +1,86 @@
+general:
+  log_level: INFO
+  log_dir: logs
+  output_dir: output
+
+network_discovery:
+  default_timeout: 3
+  max_threads: 100
+  default_ports:
+    - 21
+    - 22
+    - 23
+    - 25
+    - 53
+    - 80
+    - 110
+    - 135
+    - 139
+    - 443
+    - 445
+    - 993
+    - 995
+    - 1433
+    - 1521
+    - 3306
+    - 3389
+    - 5432
+    - 5900
+    - 8080
+    - 8443
+    - 8888
+    - 9200
+    - 9443
+
+file_generator:
+  output_dir: output
+  default_record_count: 100
+  patterns:
+    credit_card:
+      prefix: "4"
+      length: 16
+    ssn:
+      format: "XXX-XX-XXXX"
+    email:
+      domain: "example.com"
+    ip_address:
+      subnet: "10.0.0.0/24"
+
+remote_communication:
+  telegram:
+    bot_token: ""
+    api_url: "https://api.telegram.org/bot"
+    poll_timeout: 30
+    max_message_length: 4096
+    chat_id: ""
+
+vulnerability_bridge:
+  msfrpc:
+    host: "127.0.0.1"
+    port: 55553
+    password: "msf"
+    ssl: false
+    timeout: 30
+
+device_profiler:
+  snmp:
+    community: "public"
+    port: 161
+    timeout: 5
+  ssh:
+    port: 22
+    timeout: 10
+  http:
+    port: 80
+    timeout: 5
+  user_agents:
+    - "Mozilla/5.0 (Windows NT 10.0; Win64; x64)"
+    - "curl/7.68.0"
+
+transaction_analyzer:
+  supported_formats:
+    - json
+    - csv
+  suspicious_threshold: 10000
+  chain_id: 1
+  rpc_url: "http://localhost:8545"
