@@ -1,6 +1,5 @@
 import os
 import json
-from datetime import datetime
 from utils.logger import get_module_logger
 
 logger = get_module_logger("admin_config")
@@ -62,6 +61,21 @@ DEFAULT_CONFIG = {
     },
 }
 
+MODULE_LABELS = {
+    "network": "Rede",
+    "file_generator": "Gerador de Arquivos",
+    "vulnerability": "Vulnerabilidades",
+    "profiler": "Profiler de Dispositivos",
+    "transaction": "Analise Blockchain",
+    "email": "Campanha de Email",
+    "encryption": "Criptografia",
+    "exfiltration": "Exfiltracao",
+    "persistence": "Persistencia",
+    "social": "Engenharia Social",
+    "blockchain": "Forense Blockchain",
+    "telegram": "Telegram Bot",
+}
+
 
 class AdminConfig:
     def __init__(self):
@@ -108,35 +122,76 @@ class AdminConfig:
             self.config = DEFAULT_CONFIG.copy()
         self._save_config()
 
+    def format_value(self, value):
+        if isinstance(value, list):
+            return ", ".join(str(v) for v in value)
+        if value is None:
+            return "nao configurado"
+        return str(value)
+
     def show_all(self):
-        lines = ["*Configuracao Atual*\n"]
+        lines = []
+        lines.append("═══════════════════════════")
+        lines.append("   CONFIGURACAO GERAL")
+        lines.append("═══════════════════════════")
+        lines.append("")
+
         for module, settings in self.config.items():
-            lines.append(f"*{module.upper()}*")
+            label = MODULE_LABELS.get(module, module.upper())
+            lines.append(f"▸ {label}")
+            lines.append(f"  /admin show {module}")
             for key, value in settings.items():
-                lines.append(f"  {key}: `{value}`")
+                formatted = self.format_value(value)
+                lines.append(f"    {key}: {formatted}")
             lines.append("")
+
+        lines.append("═══════════════════════════")
+        lines.append("Use /admin show <modulo> para ver detalhes")
+        lines.append("Use /admin set <mod> <chave> <valor> para alterar")
         return "\n".join(lines)
 
     def show_module(self, module):
         if module not in self.config:
-            return f"Modulo '{module}' nao encontrado"
-        lines = [f"*Configuracao: {module.upper()}*\n"]
+            available = ", ".join(self.config.keys())
+            return f"Modulo '{module}' nao encontrado\n\nModulos: {available}"
+
+        label = MODULE_LABELS.get(module, module.upper())
+        lines = []
+        lines.append(f"═══════════════════════════")
+        lines.append(f"   {label}")
+        lines.append(f"═══════════════════════════")
+        lines.append("")
+
         for key, value in self.config[module].items():
-            lines.append(f"  {key}: `{value}`")
+            formatted = self.format_value(value)
+            lines.append(f"  {key}:")
+            lines.append(f"    {formatted}")
+            lines.append("")
+
+        lines.append("───────────────────────────")
+        lines.append(f"Para alterar:")
+        lines.append(f"/admin set {module} <chave> <valor>")
         return "\n".join(lines)
 
     def parse_set(self, args):
         if len(args) < 2:
-            return None, None, "Uso: /admin set <modulo> <chave> <valor>"
+            return None, None, (
+                "Uso: /admin set <modulo> <chave> <valor>\n\n"
+                "Exemplo:\n"
+                "/admin set network timeout 5\n"
+                "/admin set encryption method aes"
+            )
 
         module = args[0]
         key = args[1]
         raw_value = " ".join(args[2:]) if len(args) > 2 else None
 
         if module not in self.config:
-            return None, None, f"Modulo '{module}' nao encontrado. Modulos: {', '.join(self.config.keys())}"
+            available = ", ".join(self.config.keys())
+            return None, None, f"Modulo '{module}' nao encontrado\n\nModulos: {available}"
         if key not in self.config[module]:
-            return None, None, f"Chave '{key}' nao encontrada em {module}. Chaves: {', '.join(self.config[module].keys())}"
+            available = ", ".join(self.config[module].keys())
+            return None, None, f"Chave '{key}' nao encontrada em {module}\n\nChaves: {available}"
 
         current = self.config[module][key]
         if isinstance(current, bool):
@@ -180,38 +235,84 @@ def handle_admin(args):
 
     elif cmd == "set":
         if len(sub_args) < 3:
-            return "Uso: /admin set <modulo> <chave> <valor>\nEx: `/admin set network timeout 5`"
+            return (
+                "Uso: /admin set <modulo> <chave> <valor>\n\n"
+                "Exemplos:\n"
+                "/admin set network timeout 5\n"
+                "/admin set encryption method aes\n"
+                "/admin set email smtp_host smtp.gmail.com"
+            )
         module, key, result = config.parse_set(sub_args)
         if module:
-            return f"Configurado: {module}.{key} = `{result}`"
+            label = MODULE_LABELS.get(module, module)
+            return (
+                "═══════════════════════════\n"
+                "   CONFIGURADO\n"
+                "═══════════════════════════\n\n"
+                f"Modulo: {label}\n"
+                f"Chave: {key}\n"
+                f"Valor: {result}"
+            )
         return result
 
     elif cmd == "reset":
         module = sub_args[0] if sub_args else None
         config.reset(module)
         if module:
-            return f"Modulo '{module}' resetado para padrao"
-        return "Toda configuracao resetada para padrao"
+            label = MODULE_LABELS.get(module, module)
+            return (
+                "═══════════════════════════\n"
+                "   RESETADO\n"
+                "═══════════════════════════\n\n"
+                f"Modulo: {label}\n"
+                f"Status: Configuracao resetada para padrao"
+            )
+        return (
+            "═══════════════════════════\n"
+            "   RESETADO\n"
+            "═══════════════════════════\n\n"
+            "Todos os modulos resetados para padrao"
+        )
 
     elif cmd == "modules":
-        lines = ["*Modulos disponiveis:*\n"]
-        for module in config.config.keys():
+        lines = []
+        lines.append("═══════════════════════════")
+        lines.append("   MODULOS DISPONIVEIS")
+        lines.append("═══════════════════════════")
+        lines.append("")
+        for module, label in MODULE_LABELS.items():
             lines.append(f"  /admin show {module}")
+            lines.append(f"    {label}")
+            lines.append("")
         return "\n".join(lines)
 
     elif cmd == "help":
         return (
-            "*Comandos Admin:*\n\n"
-            "/admin - Ver toda configuracao\n"
-            "/admin show <modulo> - Ver modulo especifico\n"
-            "/admin set <modulo> <chave> <valor> - Alterar valor\n"
-            "/admin reset [modulo] - Resetar para padrao\n"
-            "/admin modules - Listar modulos\n"
-            "/admin help - Esta ajuda\n\n"
-            "*Modulos:* network, file_generator, vulnerability, profiler, "
-            "transaction, email, encryption, exfiltration, persistence, "
-            "social, blockchain, telegram"
+            "═══════════════════════════\n"
+            "   ADMIN - AJUDA\n"
+            "═══════════════════════════\n\n"
+            "  /admin\n"
+            "    Ver toda configuracao\n\n"
+            "  /admin show <modulo>\n"
+            "    Ver modulo especifico\n\n"
+            "  /admin set <modulo> <chave> <valor>\n"
+            "    Alterar valor\n\n"
+            "  /admin reset [modulo]\n"
+            "    Resetar para padrao\n\n"
+            "  /admin modules\n"
+            "    Listar modulos\n\n"
+            "  /admin help\n"
+            "    Esta ajuda\n\n"
+            "───────────────────────────\n"
+            "Modulos:\n"
+            "  network, file_generator, vulnerability\n"
+            "  profiler, transaction, email\n"
+            "  encryption, exfiltration, persistence\n"
+            "  social, blockchain, telegram"
         )
 
     else:
-        return f"Comando desconhecido: {cmd}\nEnvie /admin help para ver os comandos"
+        return (
+            f"Comando '{cmd}' nao reconhecido\n\n"
+            "Envie /admin help para ver os comandos"
+        )
