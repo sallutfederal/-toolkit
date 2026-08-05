@@ -137,9 +137,13 @@ class AgentRelay:
 
     def _init_telegram(self):
         tg_config = self.relay_config.get("telegram", {})
+        bot_token = tg_config.get("bot_token", "")
+        if not bot_token or bot_token.startswith("${"):
+            bot_token = os.environ.get("TELEGRAM_BOT_TOKEN", "")
+        api_url = tg_config.get("api_url")
         self.telegram = TelegramRelay(
-            bot_token=tg_config.get("bot_token"),
-            api_url=tg_config.get("api_url"),
+            bot_token=bot_token,
+            api_url=api_url,
         )
         logger.info("Telegram relay initialized")
 

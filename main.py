@@ -229,8 +229,15 @@ Examples:
             relay = run_remote_communication(config)
             if args.send:
                 chat_id = args.chat or config.get("remote_communication", {}).get("telegram", {}).get("chat_id")
-                relay.send_to_agent("soc", args.send)
-                print(f"Message sent: {args.send}")
+                if chat_id:
+                    tg = relay.telegram
+                    if tg:
+                        result = tg.send_message(chat_id, args.send)
+                        print(f"Message sent: {args.send}")
+                    else:
+                        print("Telegram relay not initialized. Check bot token in config.")
+                else:
+                    print("No chat_id configured. Use --chat <id> or set TELEGRAM_CHAT_ID.")
             elif args.broadcast:
                 results = relay.broadcast(args.broadcast)
                 for agent, status in results.items():
