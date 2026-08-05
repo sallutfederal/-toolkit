@@ -315,26 +315,25 @@ class TelegramBot:
     def _handle_stress(self, args):
         if not args:
             self._send(
-                "Uso: /stress <target> [method] [threads] [duration]\n\n"
-                "Methods: http, tcp, slowloris, dns\n"
-                "Default: threads=50, duration=10s\n"
-                "Proxies configurados serao usados automaticamente\n\n"
+                "Uso: /stress <target> [threads] [duration]\n\n"
+                "Default: threads=300, duration=60s\n"
+                "Proxies configurados serao usados automaticamente\n"
+                "Maximo permitido: threads=500, duration=120s\n\n"
                 "Ex:\n"
                 "`/stress example.com`\n"
-                "`/stress example.com http 100 30`\n"
-                "`/stress example.com tcp`"
+                "`/stress example.com 500 60`\n"
+                "`/stress example.com 200 30`"
             )
             return
 
         target = args[0]
-        method = args[1] if len(args) > 1 else "http"
-        threads = int(args[2]) if len(args) > 2 else 50
-        duration = int(args[3]) if len(args) > 3 else 10
+        threads = int(args[1]) if len(args) > 1 else 300
+        duration = int(args[2]) if len(args) > 2 else 60
 
-        if threads > 200:
-            threads = 200
-        if duration > 60:
-            duration = 60
+        if threads > 500:
+            threads = 500
+        if duration > 120:
+            duration = 120
 
         from modules.proxy_manager import get_proxy_manager
         manager = get_proxy_manager()
@@ -343,50 +342,50 @@ class TelegramBot:
         proxy_info = f"Proxies: {len(proxies)} ativos" if proxies else "Proxies: nenhum"
 
         self._send(
-            f"Iniciando stress test...\n"
+            f"Iniciando stress test SINGULARITY...\n"
             f"Target: {target}\n"
-            f"Method: {method}\n"
             f"Threads: {threads}\n"
             f"Duration: {duration}s\n"
             f"{proxy_info}"
         )
         try:
-            from modules.stress_tester import MultiLayerStressEngine
-            engine = MultiLayerStressEngine(target, threads, duration, proxies)
+            from modules.stress_tester import SingularityStressEngine
+            engine = SingularityStressEngine(target, threads, duration, proxies)
             stats = engine.run()
             summary = stats.get_summary()
 
-            lines = []
-            lines.append("═══════════════════════════════════════════")
-            lines.append("  STRESS TEST COMPLETED")
-            lines.append("═══════════════════════════════════════════")
-            lines.append(f"  Target: {target}")
-            lines.append(f"  Method: {method}")
-            lines.append(f"  Threads: {threads}")
-            lines.append(f"  Duration: {summary['duration']:.1f}s")
-            lines.append("═══════════════════════════════════════════")
-            lines.append("")
-            lines.append("▸ STATISTICS")
-            lines.append(f"  Total Requests: {summary['total_requests']:,}")
-            lines.append(f"  Successful: {summary['successful']:,} ({summary['success_rate']:.1f}%)")
-            lines.append(f"  Failed: {summary['failed']:,} ({100 - summary['success_rate']:.1f}%)")
-            lines.append(f"  Avg RPS: {summary['avg_rps']:.2f}")
-            lines.append(f"  Proxies Used: {len(proxies)}")
-            lines.append("")
+            report = f"""
+═══════════════════════════════════════════
+  STRESS TEST v3.0 - SINGULARITY
+═══════════════════════════════════════════
+  Target: {target}
+  Threads: {threads}
+  Duration: {summary['duration']:.1f}s
+  Status: {'DERRUBADO' if summary['is_down'] else 'ATIVO'}
+═══════════════════════════════════════════
 
-            if summary.get("by_method"):
-                lines.append("▸ BY METHOD")
-                for method_name, counts in summary["by_method"].items():
-                    lines.append(f"  {method_name}: {counts['success']} ok / {counts['fail']} fail")
-                lines.append("")
+▸ STATISTICS
+  Total Requests: {summary['total']:,}
+  Successful: {summary['success']:,} ({summary['success_rate']:.1f}%)
+  Failed: {summary['fail']:,} ({100 - summary['success_rate']:.1f}%)
+  Avg RPS: {summary['avg_rps']:.2f}
+  Uptime: {summary['uptime']:.1f}%
+  Proxies Used: {len(proxies)}
 
-            if summary.get("uptime_history"):
-                uptime = stats.get_current_uptime()
-                lines.append(f"▸ TARGET UPTIME: {uptime:.1f}%")
+▸ BY ATTACK METHOD
+"""
+            for method, data in summary.get('by_method', {}).items():
+                total = data['ok'] + data['fail']
+                if total > 0:
+                    rate = (data['ok'] / total) * 100
+                    report += f"  {method.upper()}: {total:,} reqs ({rate:.1f}% ok)\n"
 
-            lines.append("═══════════════════════════════════════════")
-
-            self._send("\n".join(lines))
+            report += f"""
+═══════════════════════════════════════════
+  {'ALVO DERRUBADO' if summary['is_down'] else 'ALVO RESISTIU'}
+═══════════════════════════════════════════
+"""
+            self._send(report)
         except Exception as e:
             self._send(f"Erro no stress test: {e}")
 
