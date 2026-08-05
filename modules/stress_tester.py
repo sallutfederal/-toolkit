@@ -296,7 +296,10 @@ class MultiLayerStressEngine(AdvancedStressEngine):
             headers["Referer"] = f"{self.base_url}/"
             headers["Origin"] = self.base_url
 
-            proxy = self._get_proxy()`n            proxies = {"http": proxy, "https": proxy} if proxy else None`n`n            response = self.session.get(url, headers=headers, timeout=3, proxies=proxies)
+            proxy = self._get_proxy()
+            proxies = {"http": proxy, "https": proxy} if proxy else None
+
+            response = self.session.get(url, headers=headers, timeout=3, proxies=proxies)
             self.stats.add_request(response.status_code < 500, "http")
         except requests.exceptions.Timeout:
             self.stats.add_request(False, "http", "Timeout")
@@ -372,7 +375,10 @@ class MultiLayerStressEngine(AdvancedStressEngine):
                 "data": self._generate_payload(1024).decode(),
             }
 
-            proxy = self._get_proxy()`n            proxies = {"http": proxy, "https": proxy} if proxy else None`n`n            response = self.session.post(url, data=data, headers=headers, timeout=3, proxies=proxies)
+            proxy = self._get_proxy()
+            proxies = {"http": proxy, "https": proxy} if proxy else None
+
+            response = self.session.post(url, data=data, headers=headers, timeout=3, proxies=proxies)
             self.stats.add_request(response.status_code < 500, "post")
         except Exception as e:
             self.stats.add_request(False, "post", str(e)[:30])
