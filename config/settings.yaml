@@ -84,3 +84,104 @@ transaction_analyzer:
   suspicious_threshold: 10000
   chain_id: 1
   rpc_url: "http://localhost:8545"
+
+email_campaign:
+  smtp:
+    host: "127.0.0.1"
+    port: 25
+    use_tls: false
+  templates:
+    - phishing_credential
+    - phishing_invoice
+    - phishing_document
+    - phishing_it_alert
+  obfuscation_methods:
+    - hex_encode
+    - entity_encode
+    - base64
+    - redirect_chain
+  default_count: 10
+
+file_encryption:
+  default_password: "TestPassword123!"
+  default_archive_format: zip
+  compression: gzip
+  supported_formats:
+    - zip
+    - 7z
+    - rar
+    - tar.gz
+
+credential_harvester:
+  common_login_urls:
+    - /login
+    - /signin
+    - /admin/login
+    - /wp-login.php
+  max_form_fields: 50
+  extract_query_params: true
+
+lateral_movement:
+  default_ports:
+    - 135
+    - 139
+    - 445
+    - 3389
+    - 5985
+    - 5986
+    - 22
+    - 443
+  max_threads: 50
+  min_trust_score: 3
+  scan_timeout: 3
+
+data_exfiltration:
+  channels:
+    - dns
+    - http
+    - icmp
+  encodings:
+    - base64
+    - base64_urlsafe
+    - hex
+  compression: gzip
+  dns_max_chunk: 63
+  http_max_chunk: 4096
+  icmp_max_chunk: 32
+
+persistent_access:
+  platforms:
+    - windows
+    - linux
+    - darwin
+  default_agent_path: null
+  methods:
+    - registry_run
+    - scheduled_task
+    - startup_folder
+    - cron
+    - systemd_service
+    - bashrc
+    - launchd
+  verify_edr_coverage: true
+
+social_engineering:
+  channels:
+    - sms
+    - whatsapp
+    - email
+  ab_test_variants: 10
+  max_messages_per_campaign: 1000
+  default_template_index: 0
+
+blockchain_forensic:
+  supported_chains:
+    - ethereum
+    - bsc
+    - polygon
+    - bitcoin
+    - avalanche
+    - arbitrum
+  suspicious_threshold: 50000
+  default_depth: 4
+  max_trace_results: 100
