@@ -11,6 +11,7 @@ HELP_TEXT = """*Security Automation Toolkit - Comandos Disponiveis*
 /scan <target> <portas> - Escanear rede (ex: `/scan 192.168.1.1 80,443`)
 /vuln <target> - Verificar vulnerabilidades (ex: `/vuln 192.168.1.1`)
 /profile <ip> - Identificar dispositivo (ex: `/profile 192.168.1.1`)
+/login <domain> - Scan de login endpoints (ex: `/login example.com`)
 
 *Arquivos e Criptografia:*
 /generate <tipo> <qtd> - Gerar arquivos de teste (ex: `/generate pdf 10`)
@@ -43,6 +44,7 @@ class TelegramBot:
             "/scan": self._handle_scan,
             "/vuln": self._handle_vuln,
             "/profile": self._handle_profile,
+            "/login": self._handle_login,
             "/generate": self._handle_generate,
             "/encrypt": self._handle_encrypt,
             "/exfil": self._handle_exfil,
@@ -184,6 +186,22 @@ class TelegramBot:
             self._send(f"Dispositivo: {result}")
         except Exception as e:
             self._send(f"Erro na identificacao: {e}")
+
+    def _handle_login(self, args):
+        if not args:
+            self._send("Uso: /login <domain>\nEx: `/login example.com`")
+            return
+
+        target = args[0]
+        self._send(f"Escaneando login endpoints em {target}...")
+        try:
+            from modules.login_scanner import LoginScanner
+            scanner = LoginScanner()
+            result = scanner.scan(target)
+            report = result.get("report", "Erro ao gerar relatorio")
+            self._send(report)
+        except Exception as e:
+            self._send(f"Erro no scan: {e}")
 
     def _handle_generate(self, args):
         if len(args) < 2:
