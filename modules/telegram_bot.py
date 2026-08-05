@@ -49,9 +49,19 @@ class TelegramBot:
 
     def start(self):
         self._running = True
+        self._clear_pending_updates()
         self._send("Bot iniciado! Envie /help para ver os comandos.")
         logger.info("Bot started for chat %s", self.chat_id)
         self._poll_loop()
+
+    def _clear_pending_updates(self):
+        try:
+            updates = self.relay.get_updates(offset=-1, timeout=0)
+            if updates:
+                self._offset = updates[-1]["update_id"] + 1
+                logger.info("Cleared %d pending updates", len(updates))
+        except Exception as e:
+            logger.error("Failed to clear pending updates: %s", e)
 
     def stop(self):
         self._running = False
@@ -76,8 +86,12 @@ class TelegramBot:
         if chat_id != self.chat_id:
             return
 
+        from_user = msg.get("from", {})
+        if from_user.get("is_bot"):
+            return
+
         text = msg.get("text", "")
-        if not text:
+        if not text or not text.startswith("/"):
             return
 
         parts = text.strip().split()
@@ -91,7 +105,7 @@ class TelegramBot:
             except Exception as e:
                 self._send(f"Erro ao executar {cmd}: {e}")
                 logger.error("Handler error for %s: %s", cmd, e)
-        elif cmd.startswith("/"):
+        else:
             self._send(f"Comando desconhecido: {cmd}\nEnvie /help para ver os comandos.")
 
     def _send(self, text):
