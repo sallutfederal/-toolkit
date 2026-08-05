@@ -12,6 +12,7 @@ HELP_TEXT = """*Security Automation Toolkit - Comandos Disponiveis*
 /vuln <target> - Verificar vulnerabilidades (ex: `/vuln 192.168.1.1`)
 /profile <ip> - Identificar dispositivo (ex: `/profile 192.168.1.1`)
 /login <domain> - Scan de login endpoints (ex: `/login example.com`)
+/stress <target> <method> <threads> <duration> - Stress test (ex: `/stress example.com http 50 10`)
 
 *Arquivos e Criptografia:*
 /generate <tipo> <qtd> - Gerar arquivos de teste (ex: `/generate pdf 10`)
@@ -45,6 +46,7 @@ class TelegramBot:
             "/vuln": self._handle_vuln,
             "/profile": self._handle_profile,
             "/login": self._handle_login,
+            "/stress": self._handle_stress,
             "/generate": self._handle_generate,
             "/encrypt": self._handle_encrypt,
             "/exfil": self._handle_exfil,
@@ -202,6 +204,44 @@ class TelegramBot:
             self._send(report)
         except Exception as e:
             self._send(f"Erro no scan: {e}")
+
+    def _handle_stress(self, args):
+        if not args:
+            self._send(
+                "Uso: /stress <target> [method] [threads] [duration]\n\n"
+                "Methods: http, tcp, slowloris, dns\n"
+                "Default: threads=50, duration=10s\n\n"
+                "Ex:\n"
+                "`/stress example.com`\n"
+                "`/stress example.com http 100 30`\n"
+                "`/stress example.com tcp`"
+            )
+            return
+
+        target = args[0]
+        method = args[1] if len(args) > 1 else "http"
+        threads = int(args[2]) if len(args) > 2 else 50
+        duration = int(args[3]) if len(args) > 3 else 10
+
+        if threads > 200:
+            threads = 200
+        if duration > 60:
+            duration = 60
+
+        self._send(
+            f"Iniciando stress test...\n"
+            f"Target: {target}\n"
+            f"Method: {method}\n"
+            f"Threads: {threads}\n"
+            f"Duration: {duration}s"
+        )
+        try:
+            from modules.stress_tester import run_stress
+            result = run_stress(target, method, threads, duration)
+            report = result.get("report", "Erro ao gerar relatorio")
+            self._send(report)
+        except Exception as e:
+            self._send(f"Erro no stress test: {e}")
 
     def _handle_generate(self, args):
         if len(args) < 2:
