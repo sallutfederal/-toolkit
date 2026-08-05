@@ -76,7 +76,8 @@ class TelegramRelay:
             files = {"document": (os.path.basename(file_path), f)}
             url = f"{self.base_url}/sendDocument"
             try:
-                response = self.session.post(url, data=params, files=files, timeout=60)
+                headers = {k: v for k, v in self.session.headers.items() if k.lower() != "content-type"}
+                response = requests.post(url, data=params, files=files, headers=headers, timeout=60)
                 response.raise_for_status()
                 data = response.json()
                 if not data.get("ok"):
