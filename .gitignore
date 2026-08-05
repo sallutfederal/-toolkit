@@ -4,3 +4,5 @@ logs/
 output/
 *.pyo
 *.pyd
+.env
+.env.example

@@ -54,6 +54,23 @@ python main.py forensic --input blockchain_data.json --chains ethereum,bsc,polyg
 
 Edit `config/settings.yaml` to customize defaults for each module.
 
+### Telegram Bot Setup
+
+1. Create a bot via [@BotFather](https://t.me/BotFather) on Telegram
+2. Copy the bot token
+3. Set the environment variable:
+   ```bash
+   export TELEGRAM_BOT_TOKEN="your_bot_token"
+   export TELEGRAM_CHAT_ID="your_chat_id"
+   ```
+4. Copy `.env.example` to `.env` and fill in your values (`.env` is gitignored)
+
+### Security Notes
+
+- Never commit `.env` files or real bot tokens to version control
+- Use environment variables for all secrets
+- Rotate bot tokens if accidentally exposed
+
 ## Project Structure
 
 ```

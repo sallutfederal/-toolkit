@@ -48,11 +48,11 @@ file_generator:
 
 remote_communication:
   telegram:
-    bot_token: ""
+    bot_token: "${TELEGRAM_BOT_TOKEN}"
     api_url: "https://api.telegram.org/bot"
     poll_timeout: 30
     max_message_length: 4096
-    chat_id: ""
+    chat_id: "${TELEGRAM_CHAT_ID}"
 
 vulnerability_bridge:
   msfrpc:
