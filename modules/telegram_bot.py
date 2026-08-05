@@ -317,7 +317,8 @@ class TelegramBot:
             self._send(
                 "Uso: /stress <target> [method] [threads] [duration]\n\n"
                 "Methods: http, tcp, slowloris, dns\n"
-                "Default: threads=50, duration=10s\n\n"
+                "Default: threads=50, duration=10s\n"
+                "Proxies configurados serao usados automaticamente\n\n"
                 "Ex:\n"
                 "`/stress example.com`\n"
                 "`/stress example.com http 100 30`\n"
@@ -335,18 +336,57 @@ class TelegramBot:
         if duration > 60:
             duration = 60
 
+        from modules.proxy_manager import get_proxy_manager
+        manager = get_proxy_manager()
+        proxies = [p["url"] for p in manager.get_all() if p["status"] == "active"]
+
+        proxy_info = f"Proxies: {len(proxies)} ativos" if proxies else "Proxies: nenhum"
+
         self._send(
             f"Iniciando stress test...\n"
             f"Target: {target}\n"
             f"Method: {method}\n"
             f"Threads: {threads}\n"
-            f"Duration: {duration}s"
+            f"Duration: {duration}s\n"
+            f"{proxy_info}"
         )
         try:
-            from modules.stress_tester import run_stress
-            result = run_stress(target, method, threads, duration)
-            report = result.get("report", "Erro ao gerar relatorio")
-            self._send(report)
+            from modules.stress_tester import MultiLayerStressEngine
+            engine = MultiLayerStressEngine(target, threads, duration, proxies)
+            stats = engine.run()
+            summary = stats.get_summary()
+
+            lines = []
+            lines.append("═══════════════════════════════════════════")
+            lines.append("  STRESS TEST COMPLETED")
+            lines.append("═══════════════════════════════════════════")
+            lines.append(f"  Target: {target}")
+            lines.append(f"  Method: {method}")
+            lines.append(f"  Threads: {threads}")
+            lines.append(f"  Duration: {summary['duration']:.1f}s")
+            lines.append("═══════════════════════════════════════════")
+            lines.append("")
+            lines.append("▸ STATISTICS")
+            lines.append(f"  Total Requests: {summary['total_requests']:,}")
+            lines.append(f"  Successful: {summary['successful']:,} ({summary['success_rate']:.1f}%)")
+            lines.append(f"  Failed: {summary['failed']:,} ({100 - summary['success_rate']:.1f}%)")
+            lines.append(f"  Avg RPS: {summary['avg_rps']:.2f}")
+            lines.append(f"  Proxies Used: {len(proxies)}")
+            lines.append("")
+
+            if summary.get("by_method"):
+                lines.append("▸ BY METHOD")
+                for method_name, counts in summary["by_method"].items():
+                    lines.append(f"  {method_name}: {counts['success']} ok / {counts['fail']} fail")
+                lines.append("")
+
+            if summary.get("uptime_history"):
+                uptime = stats.get_current_uptime()
+                lines.append(f"▸ TARGET UPTIME: {uptime:.1f}%")
+
+            lines.append("═══════════════════════════════════════════")
+
+            self._send("\n".join(lines))
         except Exception as e:
             self._send(f"Erro no stress test: {e}")
 
