@@ -183,7 +183,7 @@ class TelegramBot:
 
     def _handle_generate(self, args):
         if len(args) < 2:
-            self._send("Uso: /generate <tipo> <qtd>\nTipos: csv, json, txt\nEx: `/generate csv 10`")
+            self._send("Uso: /generate <tipo> <qtd>\nTipos: csv, json, txt, pdf\nEx: `/generate pdf 1`")
             return
 
         file_type = args[0].lower()
@@ -197,7 +197,14 @@ class TelegramBot:
                 output_dir="output/generated",
                 formats=[file_type]
             )
-            self._send(f"Arquivos gerados em: {output_path}")
+            import glob
+            files = glob.glob(os.path.join(output_path, f"*.{file_type}"))
+            if files:
+                for f in files:
+                    self.relay.send_file(self.chat_id, f, caption=os.path.basename(f))
+                    self._send(f"Arquivo enviado: {os.path.basename(f)}")
+            else:
+                self._send(f"Arquivos gerados em: {output_path}")
         except Exception as e:
             self._send(f"Erro na geracao: {e}")
 
@@ -211,7 +218,11 @@ class TelegramBot:
         try:
             from modules.file_encryption import encrypt_file
             result = encrypt_file(filepath, method="aes")
-            self._send(f"Criptografado: {result}")
+            if os.path.isfile(result):
+                self.relay.send_file(self.chat_id, result, caption=os.path.basename(result))
+                self._send(f"Arquivo criptografado enviado: {os.path.basename(result)}")
+            else:
+                self._send(f"Criptografado: {result}")
         except Exception as e:
             self._send(f"Erro na criptografia: {e}")
 
