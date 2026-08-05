@@ -77,6 +77,7 @@ Examples:
     comm_parser.add_argument("--broadcast", default=None, help="Broadcast message to all agents")
     comm_parser.add_argument("--poll", action="store_true", help="Poll for incoming messages")
     comm_parser.add_argument("--status", action="store_true", help="Show agent status")
+    comm_parser.add_argument("--bot", action="store_true", help="Run interactive bot mode")
 
     # Vulnerability Bridge
     vuln_parser = subparsers.add_parser("vuln", help="Metasploit vulnerability assessment bridge")
@@ -226,31 +227,36 @@ Examples:
             })
 
         elif args.command == "telegram":
-            relay = run_remote_communication(config)
-            if args.send:
-                chat_id = args.chat or config.get("remote_communication", {}).get("telegram", {}).get("chat_id")
-                if chat_id:
-                    tg = relay.telegram
-                    if tg:
-                        result = tg.send_message(chat_id, args.send)
-                        print(f"Message sent: {args.send}")
-                    else:
-                        print("Telegram relay not initialized. Check bot token in config.")
-                else:
-                    print("No chat_id configured. Use --chat <id> or set TELEGRAM_CHAT_ID.")
-            elif args.broadcast:
-                results = relay.broadcast(args.broadcast)
-                for agent, status in results.items():
-                    print(f"  {agent}: {status['status']}")
-            elif args.poll:
-                print("Starting message poll... (Ctrl+C to stop)")
-                relay.poll_messages(0, lambda msg: print(f"Received: {msg}"))
-            elif args.status:
-                for agent_id in relay._agents:
-                    status = relay.get_agent_status(agent_id)
-                    print(f"  {agent_id}: {status['status']}")
+            if args.bot:
+                from modules.telegram_bot import run_bot
+                print("Iniciando bot interativo... (Ctrl+C para parar)")
+                run_bot(config)
             else:
-                print("Telegram relay initialized. Use --send, --broadcast, --poll, or --status.")
+                relay = run_remote_communication(config)
+                if args.send:
+                    chat_id = args.chat or config.get("remote_communication", {}).get("telegram", {}).get("chat_id")
+                    if chat_id:
+                        tg = relay.telegram
+                        if tg:
+                            result = tg.send_message(chat_id, args.send)
+                            print(f"Message sent: {args.send}")
+                        else:
+                            print("Telegram relay not initialized. Check bot token in config.")
+                    else:
+                        print("No chat_id configured. Use --chat <id> or set TELEGRAM_CHAT_ID.")
+                elif args.broadcast:
+                    results = relay.broadcast(args.broadcast)
+                    for agent, status in results.items():
+                        print(f"  {agent}: {status['status']}")
+                elif args.poll:
+                    print("Starting message poll... (Ctrl+C to stop)")
+                    relay.poll_messages(0, lambda msg: print(f"Received: {msg}"))
+                elif args.status:
+                    for agent_id in relay._agents:
+                        status = relay.get_agent_status(agent_id)
+                        print(f"  {agent_id}: {status['status']}")
+                else:
+                    print("Telegram relay initialized. Use --send, --broadcast, --poll, or --status.")
 
         elif args.command == "vuln":
             bridge = run_vulnerability_bridge(config)
