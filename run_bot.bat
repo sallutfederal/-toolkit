@@ -1,0 +1,4 @@
+@echo off
+set TELEGRAM_BOT_TOKEN=8873733836:AAFhOpFUMA7Yc757s3ZqHjLr17x4qw_st74
+set TELEGRAM_CHAT_ID=8382297213
+python main.py telegram --bot
