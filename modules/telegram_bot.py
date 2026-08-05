@@ -21,6 +21,9 @@ HELP_TEXT = """*Security Automation Toolkit - Comandos Disponiveis*
 /persist <platform> - Simular persistencia (ex: `/persist windows`)
 /chain <tx_hash> - Analisar transacao blockchain (ex: `/chain 0xabc...`)
 
+*Configuracao:*
+/admin - Gerenciar configuracoes do sistema
+
 *Utilitarios:*
 /help - Mostrar esta ajuda
 /status - Status do sistema
@@ -45,6 +48,7 @@ class TelegramBot:
             "/exfil": self._handle_exfil,
             "/persist": self._handle_persist,
             "/chain": self._handle_chain,
+            "/admin": self._handle_admin,
         }
 
     def start(self):
@@ -263,6 +267,14 @@ class TelegramBot:
             self._send(f"Resultado: {result}")
         except Exception as e:
             self._send(f"Erro na analise: {e}")
+
+    def _handle_admin(self, args):
+        try:
+            from modules.admin_config import handle_admin
+            result = handle_admin(args)
+            self._send(result)
+        except Exception as e:
+            self._send(f"Erro no admin: {e}")
 
 
 def run_bot(config=None):
