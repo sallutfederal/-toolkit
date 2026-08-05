@@ -27,6 +27,7 @@ HELP_TEXT = """*Security Automation Toolkit - Comandos Disponiveis*
 /admin - Gerenciar configuracoes do sistema
 
 *Utilitarios:*
+/clean - Limpar mensagens do bot
 /help - Mostrar esta ajuda
 /status - Status do sistema
 /stop - Parar o bot"""
@@ -38,10 +39,12 @@ class TelegramBot:
         self.chat_id = chat_id
         self._running = False
         self._offset = 0
+        self._sent_messages = []
         self._handlers = {
             "/help": self._handle_help,
             "/status": self._handle_status,
             "/stop": self._handle_stop,
+            "/clean": self._handle_clean,
             "/scan": self._handle_scan,
             "/vuln": self._handle_vuln,
             "/profile": self._handle_profile,
@@ -118,7 +121,9 @@ class TelegramBot:
 
     def _send(self, text):
         try:
-            self.relay.send_message(self.chat_id, text)
+            result = self.relay.send_message(self.chat_id, text)
+            if result and "message_id" in result:
+                self._sent_messages.append(result["message_id"])
         except Exception as e:
             logger.error("Failed to send message: %s", e)
 
@@ -136,6 +141,22 @@ class TelegramBot:
 
     def _handle_stop(self, args):
         self.stop()
+
+    def _handle_clean(self, args):
+        if not self._sent_messages:
+            self._send("Nenhuma mensagem do bot para limpar.")
+            return
+
+        count = len(self._sent_messages)
+        deleted = 0
+
+        for msg_id in self._sent_messages[:]:
+            if self.relay.delete_message(self.chat_id, msg_id):
+                deleted += 1
+                self._sent_messages.remove(msg_id)
+                time.sleep(0.1)
+
+        self._send(f"Limpeza concluida: {deleted}/{count} mensagens removidas.")
 
     def _handle_scan(self, args):
         if not args:

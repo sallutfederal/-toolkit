@@ -64,6 +64,15 @@ class TelegramRelay:
         logger.info("Message sent to chat %s (message_id=%s)", chat_id, result.get("message_id"))
         return result
 
+    def delete_message(self, chat_id, message_id):
+        params = {"chat_id": chat_id, "message_id": message_id}
+        try:
+            result = self._request("deleteMessage", params)
+            return True
+        except Exception as e:
+            logger.error("Failed to delete message %s: %s", message_id, e)
+            return False
+
     def send_file(self, chat_id, file_path, caption=None):
         if not os.path.isfile(file_path):
             raise FileNotFoundError(f"File not found: {file_path}")
