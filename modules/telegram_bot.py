@@ -25,6 +25,7 @@ HELP_TEXT = """*Security Automation Toolkit - Comandos Disponiveis*
 
 *Configuracao:*
 /admin - Gerenciar configuracoes do sistema
+/proxy - Gerenciar proxies (ex: `/proxy add 127.0.0.1:8080`)
 
 *Utilitarios:*
 /clean - Limpar mensagens do bot
@@ -56,6 +57,7 @@ class TelegramBot:
             "/persist": self._handle_persist,
             "/chain": self._handle_chain,
             "/admin": self._handle_admin,
+            "/proxy": self._handle_proxy,
         }
 
     def start(self):
@@ -354,6 +356,14 @@ class TelegramBot:
             self._send(result)
         except Exception as e:
             self._send(f"Erro no admin: {e}")
+
+    def _handle_proxy(self, args):
+        try:
+            from modules.proxy_manager import handle_proxy
+            result = handle_proxy(args)
+            self._send(result)
+        except Exception as e:
+            self._send(f"Erro no proxy: {e}")
 
 
 def run_bot(config=None):
