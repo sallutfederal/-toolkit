@@ -315,20 +315,29 @@ class TelegramBot:
     def _handle_stress(self, args):
         if not args:
             self._send(
-                "Uso: /stress <target> [threads] [duration]\n\n"
-                "Default: threads=300, duration=60s\n"
+                "Uso: /stress <target> [method] [threads] [duration]\n\n"
+                "Methods: multilayer, http, https, slowloris, dns, syn, post\n"
+                "Default: method=multilayer, threads=300, duration=60s\n"
                 "Proxies configurados serao usados automaticamente\n"
                 "Maximo permitido: threads=500, duration=120s\n\n"
                 "Ex:\n"
                 "`/stress example.com`\n"
-                "`/stress example.com 500 60`\n"
-                "`/stress example.com 200 30`"
+                "`/stress example.com multilayer 500 60`\n"
+                "`/stress example.com http 200 30`"
             )
             return
 
         target = args[0]
-        threads = int(args[1]) if len(args) > 1 else 300
-        duration = int(args[2]) if len(args) > 2 else 60
+
+        # Detecta se o segundo argumento e method ou threads
+        if len(args) > 1 and args[1].isalpha():
+            method = args[1].lower()
+            threads = int(args[2]) if len(args) > 2 else 300
+            duration = int(args[3]) if len(args) > 3 else 60
+        else:
+            method = "multilayer"
+            threads = int(args[1]) if len(args) > 1 else 300
+            duration = int(args[2]) if len(args) > 2 else 60
 
         if threads > 500:
             threads = 500
@@ -342,8 +351,9 @@ class TelegramBot:
         proxy_info = f"Proxies: {len(proxies)} ativos" if proxies else "Proxies: nenhum"
 
         self._send(
-            f"Iniciando stress test SINGULARITY...\n"
+            f"Iniciando stress test EXTERMINIO...\n"
             f"Target: {target}\n"
+            f"Method: {method}\n"
             f"Threads: {threads}\n"
             f"Duration: {duration}s\n"
             f"{proxy_info}"
@@ -356,9 +366,10 @@ class TelegramBot:
 
             report = f"""
 ═══════════════════════════════════════════
-  STRESS TEST v3.0 - SINGULARITY
+  STRESS TEST v3.0 - EXTERMINIO
 ═══════════════════════════════════════════
   Target: {target}
+  Method: {method}
   Threads: {threads}
   Duration: {summary['duration']:.1f}s
   Status: {'DERRUBADO' if summary['is_down'] else 'ATIVO'}
@@ -374,11 +385,11 @@ class TelegramBot:
 
 ▸ BY ATTACK METHOD
 """
-            for method, data in summary.get('by_method', {}).items():
+            for attack_method, data in summary.get('by_method', {}).items():
                 total = data['ok'] + data['fail']
                 if total > 0:
                     rate = (data['ok'] / total) * 100
-                    report += f"  {method.upper()}: {total:,} reqs ({rate:.1f}% ok)\n"
+                    report += f"  {attack_method.upper()}: {total:,} reqs ({rate:.1f}% ok)\n"
 
             report += f"""
 ═══════════════════════════════════════════
