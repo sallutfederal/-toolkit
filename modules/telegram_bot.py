@@ -317,13 +317,13 @@ class TelegramBot:
             self._send(
                 "Uso: /stress <target> [method] [threads] [duration]\n\n"
                 "Methods: multilayer, http, https, slowloris, dns, syn, post\n"
-                "Default: method=multilayer, threads=300, duration=60s\n"
+                "Default: method=multilayer, threads=500, duration=60s\n"
                 "Proxies configurados serao usados automaticamente\n"
-                "Maximo permitido: threads=500, duration=120s\n\n"
+                "Maximo permitido: threads=5000, duration=600s\n\n"
                 "Ex:\n"
                 "`/stress example.com`\n"
-                "`/stress example.com multilayer 500 60`\n"
-                "`/stress example.com http 200 30`"
+                "`/stress example.com multilayer 2000 300`\n"
+                "`/stress example.com http 1000 120`"
             )
             return
 
@@ -332,17 +332,17 @@ class TelegramBot:
         # Detecta se o segundo argumento e method ou threads
         if len(args) > 1 and args[1].isalpha():
             method = args[1].lower()
-            threads = int(args[2]) if len(args) > 2 else 300
+            threads = int(args[2]) if len(args) > 2 else 500
             duration = int(args[3]) if len(args) > 3 else 60
         else:
             method = "multilayer"
-            threads = int(args[1]) if len(args) > 1 else 300
+            threads = int(args[1]) if len(args) > 1 else 500
             duration = int(args[2]) if len(args) > 2 else 60
 
-        if threads > 500:
-            threads = 500
-        if duration > 120:
-            duration = 120
+        if threads > 5000:
+            threads = 5000
+        if duration > 600:
+            duration = 600
 
         from modules.proxy_manager import get_proxy_manager
         manager = get_proxy_manager()
