@@ -349,8 +349,8 @@ class TelegramBot:
             f"{proxy_info}"
         )
         try:
-            from modules.stress_tester import SingularityStressEngine
-            engine = SingularityStressEngine(target, threads, duration, proxies)
+            from modules.stress_tester import ExterminioStressEngine
+            engine = ExterminioStressEngine(target, threads, duration, proxies)
             stats = engine.run()
             summary = stats.get_summary()
 
